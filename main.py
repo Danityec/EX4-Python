@@ -1,32 +1,25 @@
-import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
+import pandas as pd
+import sklearn as skl
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
 
 
-def tests():
-    x_index = 0
-    y_index = 1
-
-    formatter = plt.FuncFormatter(lambda i, *args: data.species[int(i)])
-
-    plt.figure(figsize=(5, 4))
-    plt.scatter(data.data[:, x_index], data.data[:, y_index], c=data.species_bin)
-    plt.colorbar(ticks=[0, 1, 2], format=formatter)
-    plt.xlabel(data.feature_names[x_index])
-    plt.ylabel(data.feature_names[y_index])
-
-    plt.tight_layout()
-    plt.show()
+def tests(data):
+    pass
     # grid = sns.FacetGrid(data, row="sex", col="species", margin_titles=True)
     # grid.map(plt.hist, "bill_length_mm")
-
+    #
     # grid = sns.FacetGrid(data, row="island_bin", col="species_bin", margin_titles=True)
     # grid.map(plt.hist, "sex_bin")
-    plt.show()
+    # plt.show()
 
 
-def categorical_to_numerical():
+def categorical_to_numerical(data):
     island_list = ['Torgersen', 'Biscoe', 'Dream']
     data['island_bin'] = pd.Categorical(data.island, ordered=False, categories=island_list).codes
 
@@ -37,39 +30,50 @@ def categorical_to_numerical():
     data['sex_bin'] = pd.Categorical(data.sex, ordered=False, categories=sex_list).codes
 
 
-def modified_heatmap():
+def modified_heatmap(data):
     plt.subplots(figsize=(8, 8))
     sns.heatmap(data.corr(), annot=True, fmt="f")
     plt.show()
 
 
-def pair_plot_sex():
+def pair_plot_sex(data):
     sns.pairplot(data, hue='sex')
     plt.show()
 
 
-def pair_plot_species():
+def pair_plot_species(data):
     sns.pairplot(data, hue='species')
     plt.show()
 
 
-def pair_plot_island():
-    sns.pairplot(data, hue='island')
-    plt.show()
-
-
-def pair_plot():
+def pair_plot_island(data):
     sns.pairplot(data, hue='island')
     plt.show()
 
 
 if __name__ == '__main__':
     data = pd.read_csv("penguins.csv")
-    # print(data.head())
-    # pair_plot_sex()
-    # pair_plot_island()
-    # pair_plot_species()
-    categorical_to_numerical()
-    modified_heatmap()
-    # tests()
-    # pair_plot()
+    data = data.dropna()
+
+    island_list = ['Torgersen', 'Biscoe', 'Dream']
+    data['island_bin'] = pd.Categorical(data.island, ordered=False, categories=island_list).codes
+    sex_list = ['Male', 'Female']
+    data['sex_bin'] = pd.Categorical(data.sex, ordered=False, categories=sex_list).codes
+
+    data = data.drop(['island', 'sex'], axis=1)
+
+    # bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g, sex_bin, island_bin
+
+    x_penguins = data.drop(['species', 'island_bin', 'sex_bin', 'body_mass_g'], axis=1)
+    y_penguins = data['species']
+
+    x_train, x_test, y_train, y_test = train_test_split(x_penguins, y_penguins, test_size=0.2, random_state=1)
+
+    model = GaussianNB()
+    model.fit(x_train, y_train)
+    y_model = model.predict(x_test)
+    y_pred = pd.Series(y_model, name='prediction')
+    predicted = pd.concat([x_test.reset_index(), y_test.reset_index(), y_pred], axis=1)
+    # print(predicted)
+
+    print(metrics.accuracy_score(y_test, y_model))
