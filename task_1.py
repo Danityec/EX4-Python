@@ -29,9 +29,6 @@ def gaussian_naive_bayes(x_data, y_data):
     gnb_model.fit(x_train, y_train)
     y_model = gnb_model.predict(x_test)
 
-    y_pred = pd.Series(y_model, name='prediction')
-    predicted = pd.concat([x_test.reset_index(), y_test.reset_index(), y_pred], axis=1)
-
     print(metrics.accuracy_score(y_test, y_model))
 
 
@@ -87,8 +84,26 @@ def bayes_plot_with_failed_scatter(df):
     clf = GaussianNB()
     clf = clf.fit(x_train, y_train)
 
-    # Train Classifier
     prob = len(clf.classes_) == 2
+
+    x_min, x_max = x.loc[:, col1].min() - 1, x.loc[:, col1].max() + 1
+    y_min, y_max = x.loc[:, col2].min() - 1, x.loc[:, col2].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2), np.arange(y_min, y_max, 0.2))
+
+    z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])
+
+    if prob:
+        z = z[:, 1] - z[:, 0]
+    else:
+        colors = "Set1"
+        z = np.argmax(z, axis=1)
+
+    z = z.reshape(xx.shape)
+
+    plt.contourf(xx, yy, z, cmap=colors, alpha=0.5)
+    plt.colorbar()
+    if not prob:
+        plt.clim(0, len(clf.classes_) + 3)
 
     y_pred_full = clf.predict(x)
     y_pred_series = pd.Series(y_pred_full)
@@ -104,26 +119,6 @@ def bayes_plot_with_failed_scatter(df):
         i += 1
 
     hue_order = clf.classes_
-
-    x_min, x_max = x.loc[:, col1].min() - 1, x.loc[:, col1].max() + 1
-    y_min, y_max = x.loc[:, col2].min() - 1, x.loc[:, col2].max() + 1
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2), np.arange(y_min, y_max, 0.2))
-
-    z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])
-
-    if prob:
-        z = z[:, 1] - z[:, 0]
-    else:
-        colors = "Set1"
-        z = np.argmax(z, axis=1)
-
-    # Put the result into a color plot
-    z = z.reshape(xx.shape)
-
-    plt.contourf(xx, yy, z, cmap=colors, alpha=0.5)
-    plt.colorbar()
-    if not prob:
-        plt.clim(0, len(clf.classes_) + 3)
 
     sns.scatterplot(data=new_data, x=col1, y=col2, hue=df.columns[2], hue_order=hue_order, palette=colors)
     fig = plt.gcf()
