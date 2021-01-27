@@ -15,86 +15,92 @@ def bayes_plot(df, model="gnb", spread=30):
     col1 = df.columns[0]
     col2 = df.columns[1]
     target = df.columns[2]
-    sns.scatterplot(data=df, x=col1, y=col2, hue=target)
-    plt.show()
-    y = df[target]  # Target variable
-    X = df.drop(target, axis=1)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+    # sns.scatterplot(data=df, x=col1, y=col2, hue=target)
+    # plt.show()
+    y = df[target]  # Target variable
+    x = df.drop(target, axis=1)
+
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1)
 
     clf = GaussianNB()
-    if (model != "gnb"):
+    if model != "gnb":
         clf = DecisionTreeClassifier(max_depth=model)
-    clf = clf.fit(X_train, y_train)
+    clf = clf.fit(x_train, y_train)
 
-    # Train Classifer
+    # Train Classifier
     prob = len(clf.classes_) == 2
 
     # Predict the response for test dataset
-    y_pred = clf.predict(X_test)
+    y_pred = clf.predict(x_test)
+    print(x)
+
     print(metrics.classification_report(y_test, y_pred))
 
-    hueorder = clf.classes_
+    y_pred_full = clf.predict(x)
+    y_pred_series = pd.Series(y_pred_full)
+    failed_data = []
+    for i in range(len(y_pred_series)):
+        if y_pred_series[y_pred_series.index[i]] != y[y.index[i]]:
+            failed_data.append(i)
+    print(len(failed_data))
 
-    def numify(val):
-        return np.where(clf.classes_ == val)[0]
+    new_data = pd.DataFrame(columns=['bill_length_mm', 'flipper_length_mm', 'species'])
+    i = 0
+    for f in failed_data:
+        new_data.loc[i] = ([x.loc[f]['bill_length_mm']] + [x.loc[f]['flipper_length_mm']] + [y_pred_series.loc[f]])
+        i += 1
 
-    Y = y.apply(numify)
-    x_min, x_max = X.loc[:, col1].min() - 1, X.loc[:, col1].max() + 1
-    y_min, y_max = X.loc[:, col2].min() - 1, X.loc[:, col2].max() + 1
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2),
-                         np.arange(y_min, y_max, 0.2))
+    hue_order = clf.classes_
 
-    Z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])
+    x_min, x_max = x.loc[:, col1].min() - 1, x.loc[:, col1].max() + 1
+    y_min, y_max = x.loc[:, col2].min() - 1, x.loc[:, col2].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2), np.arange(y_min, y_max, 0.2))
+
+    z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])
+
     if prob:
-
-        Z = Z[:, 1] - Z[:, 0]
+        z = z[:, 1] - z[:, 0]
     else:
         colors = "Set1"
-        Z = np.argmax(Z, axis=1)
+        z = np.argmax(z, axis=1)
 
     # Put the result into a color plot
-    Z = Z.reshape(xx.shape)
-    plt.contourf(xx, yy, Z, cmap=colors, alpha=0.5)
+    z = z.reshape(xx.shape)
+
+    plt.contourf(xx, yy, z, cmap=colors, alpha=0.5)
     plt.colorbar()
     if not prob:
         plt.clim(0, len(clf.classes_) + 3)
-    sns.scatterplot(data=df[::spread], x=col1, y=col2, hue=target, hue_order=hueorder, palette=colors)
+
+    sns.scatterplot(data=new_data, x=col1, y=col2, hue=target, hue_order=hue_order, palette=colors)
+    # sns.scatterplot(data=df, x=col1, y=col2, hue=target, hue_order=hue_order, palette=colors)
     fig = plt.gcf()
     fig.set_size_inches(12, 8)
     plt.show()
-
-
-def tests(data):
-    pass
-    # grid = sns.FacetGrid(data, row="sex", col="species", margin_titles=True)
-    # grid.map(plt.hist, "bill_length_mm")
-    #
-    # grid = sns.FacetGrid(data, row="island_bin", col="species_bin", margin_titles=True)
-    # grid.map(plt.hist, "sex_bin")
-    # plt.show()
 
 
 def categorical_to_numerical(data):
     island_list = ['Torgersen', 'Biscoe', 'Dream']
     data['island_bin'] = pd.Categorical(data.island, ordered=False, categories=island_list).codes
 
-    species_list = ['Adelie', 'Chinstrap', 'Gentoo']
-    data['species_bin'] = pd.Categorical(data.species, ordered=False, categories=species_list).codes
-
     sex_list = ['Male', 'Female']
     data['sex_bin'] = pd.Categorical(data.sex, ordered=False, categories=sex_list).codes
 
-
-def modified_heatmap(data):
-    plt.subplots(figsize=(8, 8))
-    sns.heatmap(data.corr(), annot=True, fmt="f")
-    plt.show()
+    return data.drop(['island', 'sex'], axis=1)
 
 
-def pair_plot_sex(data):
-    sns.pairplot(data, hue='sex')
-    plt.show()
+def gaussian_naive_bayes(x_data, y_data):
+    x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.2, random_state=1)
+
+    gnb_model = GaussianNB()
+    gnb_model.fit(x_train, y_train)
+    y_model = gnb_model.predict(x_test)
+
+    y_pred = pd.Series(y_model, name='prediction')
+    predicted = pd.concat([x_test.reset_index(), y_test.reset_index(), y_pred], axis=1)
+
+    print(metrics.accuracy_score(y_test, y_model))
 
 
 def pair_plot_species(data):
@@ -102,36 +108,15 @@ def pair_plot_species(data):
     plt.show()
 
 
-def pair_plot_island(data):
-    sns.pairplot(data, hue='island')
-    plt.show()
-
-
 if __name__ == '__main__':
-    data = pd.read_csv("penguins.csv")
-    data = data.dropna()
+    penguins = pd.read_csv("penguins.csv")
+    penguins = penguins.dropna()
 
-    island_list = ['Torgersen', 'Biscoe', 'Dream']
-    data['island_bin'] = pd.Categorical(data.island, ordered=False, categories=island_list).codes
-    sex_list = ['Male', 'Female']
-    data['sex_bin'] = pd.Categorical(data.sex, ordered=False, categories=sex_list).codes
-
-    data = data.drop(['island', 'sex'], axis=1)
+    penguins = categorical_to_numerical(penguins)
 
     # bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g, sex_bin, island_bin
+    x_penguins = penguins.drop(['species', 'island_bin', 'sex_bin', 'bill_depth_mm', 'body_mass_g'], axis=1)
+    y_penguins = penguins['species']
 
-    x_penguins = data.drop(['species', 'island_bin', 'sex_bin', 'bill_depth_mm', 'body_mass_g'], axis=1)
-    y_penguins = data['species']
-
-    x_train, x_test, y_train, y_test = train_test_split(x_penguins, y_penguins, test_size=0.2, random_state=1)
-
-    model = GaussianNB()
-    model.fit(x_train, y_train)
-    y_model = model.predict(x_test)
-    y_pred = pd.Series(y_model, name='prediction')
-    predicted = pd.concat([x_test.reset_index(), y_test.reset_index(), y_pred], axis=1)
-    # print(predicted)
-
-    print(metrics.accuracy_score(y_test, y_model))
-
+    gaussian_naive_bayes(x_penguins, y_penguins)
     bayes_plot(pd.concat([x_penguins, y_penguins], axis=1), spread=1)
