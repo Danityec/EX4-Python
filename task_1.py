@@ -50,7 +50,7 @@ def bayes_plot(df):
 
     x_min, x_max = x.loc[:, col1].min() - 1, x.loc[:, col1].max() + 1
     y_min, y_max = x.loc[:, col2].min() - 1, x.loc[:, col2].max() + 1
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2), np.arange(y_min, y_max, 0.2))
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))
 
     z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])
 
@@ -62,21 +62,25 @@ def bayes_plot(df):
 
     z = z.reshape(xx.shape)
 
-    plt.contourf(xx, yy, z, cmap=colors, alpha=0.5)
+    CP = plt.contourf(xx, yy, z, cmap=colors, alpha=0.5)
     plt.colorbar()
     if not prob:
         plt.clim(0, len(clf.classes_) + 3)
 
+    # new_data = pd.DataFrame(columns=['bill_length_mm', 'bill_depth_mm', 'species'])
+    # new_data.loc[0] = ([] + [] + ['Adelie'])
+    # new_data.loc[1] = ([] + [] + ['Chinstrap'])
+    # new_data.loc[2] = ([] + [] + ['Gentoo'])
+
+    plt.xlabel('bill_length_mm')
+    plt.ylabel('bill_depth_mm')
+    # plt.legend(['Adelie', 'Chinstrap', 'Gentoo'])
     fig = plt.gcf()
     fig.set_size_inches(12, 8)
     plt.show()
 
 
 def bayes_plot_with_failed_scatter(df):
-    colors = 'seismic'
-    col1 = df.columns[0]
-    col2 = df.columns[1]
-
     y = df[df.columns[2]]
     x = df.drop(df.columns[2], axis=1)
 
@@ -87,9 +91,13 @@ def bayes_plot_with_failed_scatter(df):
 
     prob = len(clf.classes_) == 2
 
-    x_min, x_max = x.loc[:, col1].min() - 1, x.loc[:, col1].max() + 1
-    y_min, y_max = x.loc[:, col2].min() - 1, x.loc[:, col2].max() + 1
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2), np.arange(y_min, y_max, 0.2))
+    x_min, x_max = x.loc[:, 'bill_length_mm'].min() - 1, x.loc[:, 'bill_length_mm'].max() + 1
+    y_min, y_max = x.loc[:, 'bill_depth_mm'].min() - 1, x.loc[:, 'bill_depth_mm'].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))
+
+    # x_min, x_max = x.loc[:, col1].min() - 1, x.loc[:, col1].max() + 1
+    # y_min, y_max = x.loc[:, col2].min() - 1, x.loc[:, col2].max() + 1
+    # xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))
 
     z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])
 
@@ -120,8 +128,9 @@ def bayes_plot_with_failed_scatter(df):
         i += 1
 
     hue_order = clf.classes_
-
-    sns.scatterplot(data=new_data, x=col1, y=col2, hue=df.columns[2], hue_order=hue_order, palette=colors)
+    new_data = new_data.sort_values('species')
+    new_data2 = new_data.reset_index(drop=True)
+    sns.scatterplot(data=new_data2, x='bill_length_mm', y='bill_depth_mm', hue=new_data['species'], hue_order=hue_order, palette=colors)
     fig = plt.gcf()
     fig.set_size_inches(12, 8)
     plt.show()
@@ -141,27 +150,6 @@ def bayes_classification_report(df):
     print(metrics.classification_report(y_test, y_pred))
 
 
-def prediction_naive_bayes(df):
-
-    x = df.drop(["species"], axis=1)
-    y = df["species"]
-
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1)
-
-    clf = GaussianNB()
-    clf = clf.fit(x_train, y_train)
-
-    result = permutation_importance(clf, x, y, n_repeats=10, random_state=0)
-    importance = zip(x.columns, result['importances_mean'])
-    # summarize feature importance
-    for i, v in importance:
-        print('Feature: %s, Score: %.5f' % (i, v))
-    # plot feature importance
-    print(len(x.columns), [x[1] for x in importance])
-    plt.bar(range(len(x.columns)), result['importances_mean'])
-    plt.xticks(ticks=range(len(x.columns)), labels=x.columns, rotation=90)
-    plt.show()
-
 def clean_data(df):
     df['bill_length_mm'].fillna(round((df['bill_length_mm'].mean()), 2), inplace=True)
     df['bill_depth_mm'].fillna(round((df['bill_depth_mm'].mean()), 2), inplace=True)
@@ -179,11 +167,10 @@ if __name__ == '__main__':
     penguins = pd.read_csv("penguins.csv")
     penguins = clean_data(penguins)
 
-    # 1.1:      --- we chose 'bill_length_mm' and 'flipper_length_mm'
+    # 1.1:
     # pair_plot_species(penguins.drop(['sex_bin', 'island_bin'], axis=1))
 
     # 1.2:
-    # x_penguins = penguins.drop(['species', 'island_bin', 'sex_bin', 'bill_depth_mm', 'body_mass_g'], axis=1)
     x_penguins = penguins.drop(['species', 'island_bin', 'sex_bin', 'flipper_length_mm', 'body_mass_g'], axis=1)
     y_penguins = penguins['species']
 
@@ -193,8 +180,7 @@ if __name__ == '__main__':
     bayes_plot(pd.concat([x_penguins, y_penguins], axis=1))
 
     # 1.4:
-    # bayes_plot_with_failed_scatter(pd.concat([x_penguins, y_penguins], axis=1))
+    bayes_plot_with_failed_scatter(pd.concat([x_penguins, y_penguins], axis=1))
 
     # 1.5:
     # bayes_classification_report(pd.concat([x_penguins, y_penguins], axis=1))
-    # prediction_naive_bayes(penguins)
