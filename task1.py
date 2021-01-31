@@ -30,7 +30,7 @@ def gaussian_naive_bayes(x_data, y_data):
     gnb_model.fit(x_train, y_train)
     y_model = gnb_model.predict(x_test)
 
-    #print(metrics.accuracy_score(y_test, y_model))
+    print(metrics.accuracy_score(y_test, y_model))
 
 
 def bayes_plot(df):
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     penguins = clean_data(penguins)
 
     # 1.1:      --- we chose 'bill_length_mm' and 'flipper_length_mm'
-    pair_plot_species(penguins.drop(['sex_bin', 'island_bin'], axis=1))
+    # pair_plot_species(penguins.drop(['sex_bin', 'island_bin'], axis=1))
 
     # 1.2:
     # x_penguins = penguins.drop(['species', 'island_bin', 'sex_bin', 'bill_depth_mm', 'body_mass_g'], axis=1)
@@ -193,8 +193,8 @@ if __name__ == '__main__':
     bayes_plot(pd.concat([x_penguins, y_penguins], axis=1))
 
     # 1.4:
-    bayes_plot_with_failed_scatter(pd.concat([x_penguins, y_penguins], axis=1))
+    # bayes_plot_with_failed_scatter(pd.concat([x_penguins, y_penguins], axis=1))
 
     # 1.5:
-    bayes_classification_report(pd.concat([x_penguins, y_penguins], axis=1))
+    # bayes_classification_report(pd.concat([x_penguins, y_penguins], axis=1))
     # prediction_naive_bayes(penguins)
