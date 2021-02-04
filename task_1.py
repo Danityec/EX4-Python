@@ -30,6 +30,10 @@ def gaussian_naive_bayes(x_data, y_data):
     gnb_model.fit(x_train, y_train)
     y_model = gnb_model.predict(x_test)
 
+    y_pred = pd.Series(y_model, name='prediction')
+    predicted = pd.concat([x_test.reset_index(), y_test.reset_index(), y_pred], axis=1)
+
+    predicted.to_csv('test.csv')
     print(metrics.accuracy_score(y_test, y_model))
 
 
@@ -95,10 +99,6 @@ def bayes_plot_with_failed_scatter(df):
     y_min, y_max = x.loc[:, 'bill_depth_mm'].min() - 1, x.loc[:, 'bill_depth_mm'].max() + 1
     xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))
 
-    # x_min, x_max = x.loc[:, col1].min() - 1, x.loc[:, col1].max() + 1
-    # y_min, y_max = x.loc[:, col2].min() - 1, x.loc[:, col2].max() + 1
-    # xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))
-
     z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])
 
     if prob:
@@ -124,7 +124,7 @@ def bayes_plot_with_failed_scatter(df):
     new_data = pd.DataFrame(columns=['bill_length_mm', 'bill_depth_mm', 'species'])
     i = 0
     for f in failed_data:
-        new_data.loc[i] = ([x.loc[f]['bill_length_mm']] + [x.loc[f]['bill_depth_mm']] + [y_pred_series.loc[f]])
+        new_data.loc[i] = ([x.loc[f]['bill_length_mm']] + [x.loc[f]['bill_depth_mm']] + [y.loc[f]])
         i += 1
 
     hue_order = clf.classes_
