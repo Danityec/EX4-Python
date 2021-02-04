@@ -68,7 +68,7 @@ def bayes_plot(df, spread=100):
 
     x_min, x_max = x.loc[:, col1].min() - 1, x.loc[:, col1].max() + 1
     y_min, y_max = x.loc[:, col2].min() - 1, x.loc[:, col2].max() + 1
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2), np.arange(y_min, y_max, 0.2))    # הרזולוציה היא שגורמת למדרגות, היא מדורגת כי היא אינה אופטימלית
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))    # הרזולוציה היא שגורמת למדרגות, היא מדורגת כי היא אינה אופטימלית
 
     z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])     # Probability of each decision , שיטוח הגריד
 
@@ -83,9 +83,11 @@ def bayes_plot(df, spread=100):
     plt.contourf(xx, yy, z, cmap=colors, alpha=0.5)
     plt.colorbar()
     if not prob:
-        plt.clim(0, len(clf.classes_) + 3)
+        plt.clim(0, len(clf.classes_) + 2)
     fig = plt.gcf()
     fig.set_size_inches(12, 8)
+    plt.xlabel('bill_length_mm')
+    plt.ylabel('bill_depth_mm')
     plt.show()
 
 
@@ -133,7 +135,7 @@ def bayes_plot_with_failed_scatter(df):
 
     x_min, x_max = x.loc[:, col1].min() - 1, x.loc[:, col1].max() + 1
     y_min, y_max = x.loc[:, col2].min() - 1, x.loc[:, col2].max() + 1
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.2), np.arange(y_min, y_max, 0.2))
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01), np.arange(y_min, y_max, 0.01))
 
     z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])
 
@@ -148,7 +150,7 @@ def bayes_plot_with_failed_scatter(df):
     plt.contourf(xx, yy, z, cmap=colors, alpha=0.5)
     plt.colorbar()
     if not prob:
-        plt.clim(0, len(clf.classes_) + 3)
+        plt.clim(0, len(clf.classes_) + 2)
 
     y_pred_full = clf.predict(x)
     y_pred_series = pd.Series(y_pred_full)
@@ -161,10 +163,11 @@ def bayes_plot_with_failed_scatter(df):
     new_data = pd.DataFrame(columns=['bill_length_mm', 'bill_depth_mm', 'class'])
     i = 0
     for f in failed_data:
-        new_data.loc[i] = ([x.loc[f]['bill_length_mm']] + [x.loc[f]['bill_depth_mm']] + [y_pred_series.loc[f]])
+        new_data.loc[i] = ([x.loc[f]['bill_length_mm']] + [x.loc[f]['bill_depth_mm']] + [y.loc[f]])
         i += 1
 
     hue_order = clf.classes_
+    print(colors)
 
     sns.scatterplot(data=new_data, x=col1, y=col2, hue=df.columns[2], hue_order=hue_order, palette=colors)
     fig = plt.gcf()
